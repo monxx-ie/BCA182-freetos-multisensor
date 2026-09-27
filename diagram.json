@@ -14,7 +14,7 @@
 
     ["dht1:VCC", "bluepill1:3V3", "red", []],
     ["dht1:GND", "bluepill1:GND", "black", []],
-    ["dht1:SDA", "bluepill1:A0", "green", []],
+    ["dht1:SDA", "bluepill1:A1", "green", []],
 
     ["oled1:VCC", "bluepill1:3V3", "red", []],
     ["oled1:GND", "bluepill1:GND", "black", []],
