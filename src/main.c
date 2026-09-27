@@ -167,13 +167,16 @@ static void TaskA(void *argument)
     }
 }
 
-/* Steps 20-21: verify DHT22 and LDR over serial before building SensorTask */
-static void SensorTestTask(void *argument)
+/* SensorTask: periodic acquisition of DHT22 + LDR every 2 s.
+   vTaskDelayUntil() keeps a fixed period measured from the previous
+   wake time, so the time spent reading sensors does not cause drift. */
+static void SensorTask(void *argument)
 {
     (void)argument;
     Dht22Reading r;
     uint16_t raw;
     char num[12];
+    TickType_t lastWakeTime = xTaskGetTickCount();
 
     for (;;)
     {
@@ -199,17 +202,14 @@ static void SensorTestTask(void *argument)
             Log("Light: ");
             FormatUint(num, LDR_RawToPercent(raw));
             Log(num);
-            Log(" % (raw ");
-            FormatUint(num, raw);
-            Log(num);
-            Log(")\r\n");
+            Log(" %\r\n");
         }
         else
         {
             Log("LDR read failed\r\n");
         }
 
-        vTaskDelay(pdMS_TO_TICKS(SENSOR_PERIOD_MS));
+        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(SENSOR_PERIOD_MS));
     }
 }
 
@@ -227,7 +227,7 @@ int main(void)
     Log("System starting...\r\n");
 
     BaseType_t okA = xTaskCreate(TaskA, "TaskA", TASK_STACK_WORDS, NULL, TASK_A_PRIORITY, NULL);
-    BaseType_t okS = xTaskCreate(SensorTestTask, "SensorTest", TASK_STACK_WORDS, NULL, SENSOR_TASK_PRIORITY, NULL);
+    BaseType_t okS = xTaskCreate(SensorTask, "SensorTask", TASK_STACK_WORDS, NULL, SENSOR_TASK_PRIORITY, NULL);
 
     if (okA != pdPASS || okS != pdPASS)
     {
