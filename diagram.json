@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "author": "Sandy",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-stm32-bluepill", "id": "bluepill1", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-dht22", "id": "dht1", "top": 0, "left": 180, "attrs": { "temperature": "25", "humidity": "50" } },
+    { "type": "board-ssd1306", "id": "oled1", "top": -140, "left": 0, "attrs": { "i2cAddress": "0x3c" } },
+    { "type": "wokwi-buzzer", "id": "buzzer1", "top": 180, "left": 180, "attrs": {} }
+  ],
+  "connections": [
+    ["bluepill1:A9", "$serialMonitor:RX", "", []],
+    ["bluepill1:A10", "$serialMonitor:TX", "", []],
+
+    ["dht1:VCC", "bluepill1:3V3", "red", []],
+    ["dht1:GND", "bluepill1:GND", "black", []],
+    ["dht1:SDA", "bluepill1:A0", "green", []],
+
+    ["oled1:VCC", "bluepill1:3V3", "red", []],
+    ["oled1:GND", "bluepill1:GND", "black", []],
+    ["oled1:SDA", "bluepill1:B7", "blue", []],
+    ["oled1:SCL", "bluepill1:B6", "yellow", []],
+
+    ["buzzer1:1", "bluepill1:B0", "purple", []],
+    ["buzzer1:2", "bluepill1:GND", "black", []]
+  ]
+}
