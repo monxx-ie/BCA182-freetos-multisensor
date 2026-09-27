@@ -8,7 +8,8 @@
     { "type": "board-ssd1306", "id": "oled1", "top": -140, "left": 0, "attrs": { "i2cAddress": "0x3c" } },
     { "type": "wokwi-buzzer", "id": "buzzer1", "top": 180, "left": 180, "attrs": {} },
     { "type": "wokwi-photoresistor-sensor", "id": "ldr1", "top": -120, "left": 180, "attrs": {} },
-    { "type": "wokwi-ky-040", "id": "encoder1", "top": 0, "left": -220, "attrs": {} }
+    { "type": "wokwi-ky-040", "id": "encoder1", "top": 0, "left": -220, "attrs": {} },
+    { "type": "wokwi-pir-motion-sensor", "id": "pir1", "top": 180, "left": -200, "attrs": {} }
   ],
   "connections": [
     ["bluepill1:A9", "$serialMonitor:RX", "", []],
@@ -26,6 +27,10 @@
     ["encoder1:GND", "bluepill1:GND", "black", []],
     ["encoder1:CLK", "bluepill1:A4", "cyan", []],
     ["encoder1:DT", "bluepill1:A5", "magenta", []],
+
+    ["pir1:VCC", "bluepill1:3V3", "red", []],
+    ["pir1:GND", "bluepill1:GND", "black", []],
+    ["pir1:OUT", "bluepill1:A3", "gold", []],
 
     ["oled1:VCC", "bluepill1:3V3", "red", []],
     ["oled1:GND", "bluepill1:GND", "black", []],

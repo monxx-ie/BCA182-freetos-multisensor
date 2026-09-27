@@ -51,3 +51,26 @@ const char *alarmStateName(AlarmState state)
         default:                     return "?";
     }
 }
+
+/* ---------- System activity state machine ---------- */
+
+SystemState evaluateSystemState(SystemState current,
+                                bool motionDetected,
+                                uint32_t msSinceLastMotion,
+                                uint32_t timeoutMs)
+{
+    if (motionDetected)
+    {
+        return SYSTEM_ACTIVE;
+    }
+    if (current == SYSTEM_ACTIVE && msSinceLastMotion >= timeoutMs)
+    {
+        return SYSTEM_INACTIVE;
+    }
+    return current;
+}
+
+const char *systemStateName(SystemState state)
+{
+    return (state == SYSTEM_ACTIVE) ? "ACTIVE" : "INACTIVE";
+}

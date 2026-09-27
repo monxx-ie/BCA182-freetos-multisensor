@@ -6,12 +6,16 @@
 #include "display.h"
 #include "input.h"
 #include "alarm.h"
+#include "motion.h"
+#include "system_state.h"
 #include "log.h"
 
 #define TASK_STACK_WORDS       256
 
-/* Priorities: higher number = more urgent */
+/* Priorities: higher number = more urgent (see report for justification) */
+#define MOTION_TASK_PRIORITY   3   /* motion must be noticed promptly (wakes system) */
 #define INPUT_TASK_PRIORITY    3   /* user input must feel immediate */
+#define STATE_TASK_PRIORITY    3   /* state changes react to motion events */
 #define SENSOR_TASK_PRIORITY   2   /* 2 s periodic sampling, tolerates small delays */
 #define ALARM_TASK_PRIORITY    2   /* reacts to each new reading; 2 s cadence */
 #define DISPLAY_TASK_PRIORITY  1   /* redraw can wait; slowest, least urgent */
@@ -27,6 +31,8 @@ void app_main(void)
     }
 
     BaseType_t ok = pdPASS;
+    ok &= xTaskCreate(MotionTask,  "MotionTask",  TASK_STACK_WORDS, NULL, MOTION_TASK_PRIORITY,  NULL);
+    ok &= xTaskCreate(StateTask,   "StateTask",   TASK_STACK_WORDS, NULL, STATE_TASK_PRIORITY,   NULL);
     ok &= xTaskCreate(InputTask,   "InputTask",   TASK_STACK_WORDS, NULL, INPUT_TASK_PRIORITY,   NULL);
     ok &= xTaskCreate(SensorTask,  "SensorTask",  TASK_STACK_WORDS, NULL, SENSOR_TASK_PRIORITY,  NULL);
     ok &= xTaskCreate(AlarmTask,   "AlarmTask",   TASK_STACK_WORDS, NULL, ALARM_TASK_PRIORITY,   NULL);

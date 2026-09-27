@@ -2,6 +2,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "event_groups.h"
 #include "dht22.h"
 #include "ldr.h"
 #include "rtos_objects.h"
@@ -45,7 +46,8 @@ void SensorTask(void *argument)
             data.lightLevel = LDR_RawToPercent(raw);
         }
 
-        data.motionDetected = false;    /* PIR is added in Part IX */
+        /* Current PIR level, published by MotionTask (which owns the PIR) */
+        data.motionDetected = (xEventGroupGetBits(systemEvents) & EVENT_PIR_LEVEL) != 0;
 
         /* Length-1 queues + overwrite: each consumer always gets the
            NEWEST reading instead of a backlog of old ones. Two queues are

@@ -9,6 +9,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "event_groups.h"
 
 #define DISPLAY_WAIT_MS  100U
 
@@ -46,7 +47,7 @@ static int32_t ToTenths(float v)
     return (int32_t)(v * 10.0f + ((v >= 0.0f) ? 0.5f : -0.5f));
 }
 
-static void Render(const SensorData *d, bool haveData, DisplayMode mode)
+static void Render(const SensorData *d, bool haveData, DisplayMode mode, bool alarm)
 {
     char value[16];
 
@@ -84,18 +85,24 @@ static void Render(const SensorData *d, bool haveData, DisplayMode mode)
     SSD1306_DrawString(0, 0,  "ROOM MONITOR", 1);
     SSD1306_DrawString(0, 16, displayModeName(mode), 1);
     SSD1306_DrawString(0, 32, value, 2);
+    if (alarm)
+    {
+        SSD1306_DrawString(0, 56, "! TEMP ALARM", 1);
+    }
     (void)SSD1306_Update();
 }
 
 /* DisplayTask: the ONLY task that touches the OLED.
-   Waits (Blocked) up to 100 ms for new sensor data, also checks for a
-   page change, and redraws only when something actually changed. */
+   ACTIVE:   waits up to 100 ms for new data / page changes, redraws on change.
+   INACTIVE: turns the OLED off and BLOCKS on EVENT_ACTIVE, so no display
+             work is done at all until motion reactivates the system. */
 void DisplayTask(void *argument)
 {
     (void)argument;
     SensorData data = {0};
     bool haveData = false;
     DisplayMode mode = DISPLAY_TEMPERATURE;
+    bool lastAlarm = false;
 
     if (SSD1306_Init())
     {
@@ -105,10 +112,31 @@ void DisplayTask(void *argument)
     {
         Log("[DisplayTask] OLED init failed\r\n");
     }
-    Render(&data, haveData, mode);
+    Render(&data, haveData, mode, lastAlarm);
 
     for (;;)
     {
+        EventBits_t bits = xEventGroupGetBits(systemEvents);
+
+        if ((bits & EVENT_ACTIVE) == 0)
+        {
+            SSD1306_SetPower(false);
+            Log("[DisplayTask] OLED off (INACTIVE)\r\n");
+
+            (void)xEventGroupWaitBits(systemEvents, EVENT_ACTIVE, pdFALSE, pdTRUE, portMAX_DELAY);
+
+            SSD1306_SetPower(true);
+            Log("[DisplayTask] OLED on (ACTIVE)\r\n");
+
+            /* Pick up anything that changed while the screen was off */
+            (void)xQueueReceive(sensorToDisplayQueue, &data, 0);
+            DisplayMode m;
+            if (xQueueReceive(displayModeQueue, &m, 0) == pdPASS) { mode = m; }
+            lastAlarm = (xEventGroupGetBits(systemEvents) & EVENT_ALARM) != 0;
+            Render(&data, haveData, mode, lastAlarm);
+            continue;
+        }
+
         bool changed = false;
         DisplayMode newMode;
 
@@ -124,9 +152,16 @@ void DisplayTask(void *argument)
             changed = true;
         }
 
+        bool alarm = (xEventGroupGetBits(systemEvents) & EVENT_ALARM) != 0;
+        if (alarm != lastAlarm)
+        {
+            lastAlarm = alarm;
+            changed = true;
+        }
+
         if (changed)
         {
-            Render(&data, haveData, mode);
+            Render(&data, haveData, mode, lastAlarm);
         }
     }
 }

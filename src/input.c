@@ -6,6 +6,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "event_groups.h"
 
 #define ENC_PORT         GPIOA
 #define ENC_CLK_PIN      GPIO_PIN_4
@@ -62,7 +63,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 }
 
 /* InputTask: every 50 ms, consumes encoder steps and publishes the
-   selected page to DisplayTask through displayModeQueue. */
+   selected page to DisplayTask through displayModeQueue.
+   Encoder input is ignored while the system is INACTIVE. */
 void InputTask(void *argument)
 {
     (void)argument;
@@ -80,7 +82,9 @@ void InputTask(void *argument)
         encoderSteps = 0;
         taskEXIT_CRITICAL();
 
-        if (steps != 0)
+        bool active = (xEventGroupGetBits(systemEvents) & EVENT_ACTIVE) != 0;
+
+        if (steps != 0 && active)
         {
             while (steps > 0) { mode = nextDisplayMode(mode);     steps--; }
             while (steps < 0) { mode = previousDisplayMode(mode); steps++; }

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "alarm.h"
 #include "buzzer.h"
 #include "logic.h"
@@ -7,6 +8,9 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "event_groups.h"
+
+#define ALARM_WAIT_MS  250U
 
 void AlarmTask(void *argument)
 {
@@ -21,28 +25,30 @@ void AlarmTask(void *argument)
 
     for (;;)
     {
-        /* Blocked until SensorTask publishes a new reading */
-        if (xQueueReceive(sensorToAlarmQueue, &d, portMAX_DELAY) != pdPASS)
+        /* Blocked until a new reading arrives, or at most 250 ms so a change
+           to INACTIVE silences the buzzer promptly */
+        if (xQueueReceive(sensorToAlarmQueue, &d, pdMS_TO_TICKS(ALARM_WAIT_MS)) == pdPASS)
         {
-            continue;
+            /* A failed DHT22 read is not treated as an alarm; keep the last state */
+            if (d.dhtValid)
+            {
+                AlarmState newState = evaluateTemperature(d.temperature);   /* pure logic */
+
+                if (newState != state)
+                {
+                    state = newState;
+                    Log("[AlarmTask] Alarm state: ");
+                    Log(alarmStateName(state));
+                    Log("\r\n");
+
+                    if (state != ALARM_NORMAL) { (void)xEventGroupSetBits(systemEvents, EVENT_ALARM); }
+                    else                       { (void)xEventGroupClearBits(systemEvents, EVENT_ALARM); }
+                }
+            }
         }
 
-        /* A failed DHT22 read is not treated as an alarm; keep the last state */
-        if (!d.dhtValid)
-        {
-            continue;
-        }
-
-        AlarmState newState = evaluateTemperature(d.temperature);   /* pure logic */
-
-        if (newState != state)
-        {
-            state = newState;
-            Log("[AlarmTask] Alarm state: ");
-            Log(alarmStateName(state));
-            Log("\r\n");
-        }
-
-        Buzzer_Set(state != ALARM_NORMAL);                          /* hardware */
+        /* The alarm only sounds while the system is ACTIVE */
+        bool active = (xEventGroupGetBits(systemEvents) & EVENT_ACTIVE) != 0;
+        Buzzer_Set(active && state != ALARM_NORMAL);                        /* hardware */
     }
 }
