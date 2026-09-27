@@ -37,9 +37,12 @@ void AlarmTask(void *argument)
                 if (newState != state)
                 {
                     state = newState;
+
+                    Log_Begin();
                     Log("[AlarmTask] Alarm state: ");
                     Log(alarmStateName(state));
                     Log("\r\n");
+                    Log_End();
 
                     if (state != ALARM_NORMAL) { (void)xEventGroupSetBits(systemEvents, EVENT_ALARM); }
                     else                       { (void)xEventGroupClearBits(systemEvents, EVENT_ALARM); }

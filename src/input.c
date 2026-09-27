@@ -91,9 +91,11 @@ void InputTask(void *argument)
 
             xQueueOverwrite(displayModeQueue, &mode);
 
+            Log_Begin();
             Log("[InputTask] Page: ");
             Log(displayModeName(mode));
             Log("\r\n");
+            Log_End();
         }
 
         vTaskDelay(pdMS_TO_TICKS(INPUT_PERIOD_MS));

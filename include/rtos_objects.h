@@ -5,6 +5,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "event_groups.h"
+#include "semphr.h"
 
 /* ---------- Queues ---------- */
 
@@ -30,6 +31,11 @@ extern QueueHandle_t displayModeQueue;
 #define EVENT_PIR_LEVEL  ((EventBits_t)(1UL << 3))
 
 extern EventGroupHandle_t systemEvents;
+
+/* ---------- Mutex ----------
+   serialMutex: protects USART1 diagnostic output shared by all tasks.
+   Recursive so Log_Begin()/Log_End() can wrap several Log() calls. */
+extern SemaphoreHandle_t serialMutex;
 
 bool RTOS_Objects_Create(void);
 

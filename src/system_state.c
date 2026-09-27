@@ -52,9 +52,11 @@ void StateTask(void *argument)
                 (void)xEventGroupClearBits(systemEvents, EVENT_ACTIVE);
             }
 
+            Log_Begin();
             Log("[StateTask] System ");
             Log(systemStateName(state));
             Log("\r\n");
+            Log_End();
         }
     }
 }

@@ -1,6 +1,10 @@
 #include <string.h>
 #include "log.h"
+#include "rtos_objects.h"
 #include "stm32f1xx_hal.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
 
 static UART_HandleTypeDef huart1;
 
@@ -17,9 +21,35 @@ void Log_Init(void)
     HAL_UART_Init(&huart1);   /* pins are set up in stm32f1xx_hal_msp.c */
 }
 
+/* Before the scheduler starts there is only one thread of execution,
+   so locking is skipped (and the mutex may not exist yet). */
+static int MutexUsable(void)
+{
+    return (serialMutex != NULL) &&
+           (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED);
+}
+
+void Log_Begin(void)
+{
+    if (MutexUsable())
+    {
+        (void)xSemaphoreTakeRecursive(serialMutex, portMAX_DELAY);
+    }
+}
+
+void Log_End(void)
+{
+    if (MutexUsable())
+    {
+        (void)xSemaphoreGiveRecursive(serialMutex);
+    }
+}
+
 void Log(const char *msg)
 {
+    Log_Begin();
     HAL_UART_Transmit(&huart1, (uint8_t *)msg, (uint16_t)strlen(msg), HAL_MAX_DELAY);
+    Log_End();
 }
 
 void Log_Tenths(int32_t v)
