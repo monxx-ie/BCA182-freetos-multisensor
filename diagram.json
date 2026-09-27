@@ -6,7 +6,8 @@
     { "type": "board-stm32-bluepill", "id": "bluepill1", "top": 0, "left": 0, "attrs": {} },
     { "type": "wokwi-dht22", "id": "dht1", "top": 0, "left": 180, "attrs": { "temperature": "25", "humidity": "50" } },
     { "type": "board-ssd1306", "id": "oled1", "top": -140, "left": 0, "attrs": { "i2cAddress": "0x3c" } },
-    { "type": "wokwi-buzzer", "id": "buzzer1", "top": 180, "left": 180, "attrs": {} }
+    { "type": "wokwi-buzzer", "id": "buzzer1", "top": 180, "left": 180, "attrs": {} },
+    { "type": "wokwi-photoresistor-sensor", "id": "ldr1", "top": -120, "left": 180, "attrs": {} }
   ],
   "connections": [
     ["bluepill1:A9", "$serialMonitor:RX", "", []],
@@ -15,6 +16,10 @@
     ["dht1:VCC", "bluepill1:3V3", "red", []],
     ["dht1:GND", "bluepill1:GND", "black", []],
     ["dht1:SDA", "bluepill1:A1", "green", []],
+
+    ["ldr1:VCC", "bluepill1:3V3", "red", []],
+    ["ldr1:GND", "bluepill1:GND", "black", []],
+    ["ldr1:AO", "bluepill1:A0", "orange", []],
 
     ["oled1:VCC", "bluepill1:3V3", "red", []],
     ["oled1:GND", "bluepill1:GND", "black", []],

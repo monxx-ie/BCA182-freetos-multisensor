@@ -6,6 +6,7 @@
 #include "task.h"
 
 #include "dht22.h"
+#include "ldr.h"
 
 static UART_HandleTypeDef huart1;
 
@@ -60,6 +61,18 @@ static void FormatTenths(char *buf, int32_t v)
     tmp[i++] = '.';
     do { tmp[i++] = (char)('0' + (v % 10)); v /= 10; } while (v > 0);
     if (neg) { tmp[i++] = '-'; }
+
+    int j = 0;
+    while (i > 0) { buf[j++] = tmp[--i]; }
+    buf[j] = '\0';
+}
+
+/* Formats an unsigned integer (e.g. 57 -> "57") into buf */
+static void FormatUint(char *buf, uint32_t v)
+{
+    char tmp[12];
+    int i = 0;
+    do { tmp[i++] = (char)('0' + (v % 10)); v /= 10; } while (v > 0);
 
     int j = 0;
     while (i > 0) { buf[j++] = tmp[--i]; }
@@ -136,11 +149,11 @@ void vApplicationIdleHook(void)
     }
 }
 
-#define TASK_A_PERIOD_MS   1000
-#define DHT_PERIOD_MS      2000
-#define TASK_A_PRIORITY    1
-#define DHT_TASK_PRIORITY  2
-#define TASK_STACK_WORDS   256
+#define TASK_A_PERIOD_MS     1000
+#define SENSOR_PERIOD_MS     2000
+#define TASK_A_PRIORITY      1
+#define SENSOR_TASK_PRIORITY 2
+#define TASK_STACK_WORDS     256
 
 static void TaskA(void *argument)
 {
@@ -154,11 +167,12 @@ static void TaskA(void *argument)
     }
 }
 
-/* Step 20: verify the DHT22 over serial before building SensorTask */
-static void DhtTestTask(void *argument)
+/* Steps 20-21: verify DHT22 and LDR over serial before building SensorTask */
+static void SensorTestTask(void *argument)
 {
     (void)argument;
     Dht22Reading r;
+    uint16_t raw;
     char num[12];
 
     for (;;)
@@ -179,7 +193,23 @@ static void DhtTestTask(void *argument)
         {
             Log("DHT22 read failed\r\n");
         }
-        vTaskDelay(pdMS_TO_TICKS(DHT_PERIOD_MS));
+
+        if (LDR_ReadRaw(&raw))
+        {
+            Log("Light: ");
+            FormatUint(num, LDR_RawToPercent(raw));
+            Log(num);
+            Log(" % (raw ");
+            FormatUint(num, raw);
+            Log(num);
+            Log(")\r\n");
+        }
+        else
+        {
+            Log("LDR read failed\r\n");
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(SENSOR_PERIOD_MS));
     }
 }
 
@@ -191,14 +221,15 @@ int main(void)
     LED_Init();
     UART1_Init();
     DHT22_Init();
+    LDR_Init();
 
     Log("BCA182 FreeRTOS Multisensor\r\n");
     Log("System starting...\r\n");
 
     BaseType_t okA = xTaskCreate(TaskA, "TaskA", TASK_STACK_WORDS, NULL, TASK_A_PRIORITY, NULL);
-    BaseType_t okD = xTaskCreate(DhtTestTask, "DhtTest", TASK_STACK_WORDS, NULL, DHT_TASK_PRIORITY, NULL);
+    BaseType_t okS = xTaskCreate(SensorTestTask, "SensorTest", TASK_STACK_WORDS, NULL, SENSOR_TASK_PRIORITY, NULL);
 
-    if (okA != pdPASS || okD != pdPASS)
+    if (okA != pdPASS || okS != pdPASS)
     {
         Log("ERROR: task creation failed\r\n");
         while (1)
