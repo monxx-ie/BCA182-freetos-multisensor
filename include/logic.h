@@ -3,6 +3,7 @@
 
 /* Hardware-independent decision logic (unit-testable on the PC) */
 
+/* ---------- Display navigation ---------- */
 typedef enum
 {
     DISPLAY_TEMPERATURE = 0,
@@ -19,5 +20,21 @@ DisplayMode nextDisplayMode(DisplayMode mode);
 DisplayMode previousDisplayMode(DisplayMode mode);
 
 const char *displayModeName(DisplayMode mode);
+
+/* ---------- Temperature alarm ---------- */
+#define LOW_TEMPERATURE_LIMIT   18.0f   /* degrees C */
+#define HIGH_TEMPERATURE_LIMIT  30.0f   /* degrees C */
+
+typedef enum
+{
+    ALARM_NORMAL = 0,
+    ALARM_LOW_TEMPERATURE,
+    ALARM_HIGH_TEMPERATURE
+} AlarmState;
+
+/* Below 18 C -> LOW, above 30 C -> HIGH, 18..30 inclusive -> NORMAL */
+AlarmState evaluateTemperature(float temperature);
+
+const char *alarmStateName(AlarmState state);
 
 #endif
