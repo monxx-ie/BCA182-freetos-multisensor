@@ -11,6 +11,9 @@ extern QueueHandle_t sensorToDisplayQueue;
 /* SensorTask -> AlarmTask: latest SensorData */
 extern QueueHandle_t sensorToAlarmQueue;
 
+/* InputTask -> DisplayTask: currently selected DisplayMode */
+extern QueueHandle_t displayModeQueue;
+
 bool RTOS_Objects_Create(void);
 
 #endif

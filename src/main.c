@@ -1,6 +1,7 @@
 #include "stm32f1xx_hal.h"
 #include "log.h"
 #include "sensors.h"
+#include "input.h"
 #include "app.h"
 
 void Error_Handler(void)
@@ -32,6 +33,7 @@ int main(void)
     StatusLed_Init();
     Log_Init();
     Sensors_Init();
+    Input_Init();
 
     Log("BCA182 FreeRTOS Multisensor\r\n");
 

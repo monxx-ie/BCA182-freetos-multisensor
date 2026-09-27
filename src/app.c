@@ -4,11 +4,15 @@
 #include "rtos_objects.h"
 #include "sensors.h"
 #include "display.h"
+#include "input.h"
 #include "log.h"
 
 #define TASK_STACK_WORDS       256
-#define SENSOR_TASK_PRIORITY   2
-#define DISPLAY_TASK_PRIORITY  1
+
+/* Priorities: higher number = more urgent */
+#define INPUT_TASK_PRIORITY    3   /* user input must feel immediate */
+#define SENSOR_TASK_PRIORITY   2   /* 2 s periodic sampling, tolerates small delays */
+#define DISPLAY_TASK_PRIORITY  1   /* redraw can wait; slowest, least urgent */
 
 void app_main(void)
 {
@@ -21,6 +25,7 @@ void app_main(void)
     }
 
     BaseType_t ok = pdPASS;
+    ok &= xTaskCreate(InputTask,   "InputTask",   TASK_STACK_WORDS, NULL, INPUT_TASK_PRIORITY,   NULL);
     ok &= xTaskCreate(SensorTask,  "SensorTask",  TASK_STACK_WORDS, NULL, SENSOR_TASK_PRIORITY,  NULL);
     ok &= xTaskCreate(DisplayTask, "DisplayTask", TASK_STACK_WORDS, NULL, DISPLAY_TASK_PRIORITY, NULL);
 
