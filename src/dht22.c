@@ -27,9 +27,12 @@ static void DelayUs(uint32_t us)
     uint32_t ticks = us * cyclesPerUs;
     uint32_t guard = us * 20U;          /* fallback if the cycle counter stalls */
 
-    while ((DWT->CYCCNT - start) < ticks)
+    for (;;)
     {
-        if (guard-- == 0U) { break; }
+        uint32_t elapsed = DWT->CYCCNT - start;   /* wrap-safe unsigned difference */
+                /* cppcheck-suppress unsignedLessThanZero ; false positive: wrap-safe elapsed-time check, no sign comparison */
+        if (elapsed >= ticks)  { break; }
+        if (guard-- == 0U)     { break; }
     }
 }
 
@@ -63,12 +66,16 @@ static int WaitLevel(uint32_t level, uint32_t timeoutUs)
     uint32_t limit = timeoutUs * cyclesPerUs;
     uint32_t guard = timeoutUs * 20U;   /* fallback if the cycle counter stalls */
 
-    while (((DHT_PORT->IDR & DHT_PIN) ? 1U : 0U) != level)
+    for (;;)
     {
-        if ((DWT->CYCCNT - start) > limit) { return -1; }
-        if (guard-- == 0U)                 { return -1; }
+        uint32_t elapsed = DWT->CYCCNT - start;   /* wrap-safe unsigned difference */
+        uint32_t pin = ((DHT_PORT->IDR & DHT_PIN) != 0U) ? 1U : 0U;
+
+        if (pin == level)     { return (int)(elapsed / cyclesPerUs); }
+                /* cppcheck-suppress unsignedLessThanZero ; false positive: wrap-safe elapsed-time check, no sign comparison */
+        if (elapsed > limit)  { return -1; }
+        if (guard-- == 0U)    { return -1; }
     }
-    return (int)((DWT->CYCCNT - start) / cyclesPerUs);
 }
 
 void DHT22_Init(void)
